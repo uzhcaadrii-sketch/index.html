@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Sensor Dashboard</title>
+    <style>
+        body { background: #050505; color: #fff; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .monitor { background: #111; padding: 50px; border-radius: 40px; border: 1px solid #222; text-align: center; width: 300px; position: relative; }
+        
+        /* El círculo de progreso chato */
+        .circle-container { width: 200px; height: 200px; margin: 0 auto 20px; display: flex; justify-content: center; align-items: center; border-radius: 50%; border: 10px solid #222; position: relative; }
+        #valor-num { font-size: 5rem; font-weight: 900; color: #00d1ff; }
+        
+        .label { color: #444; text-transform: uppercase; letter-spacing: 4px; font-size: 0.7rem; margin-top: 10px; }
+        
+        /* Indicador de estado */
+        .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; background: #ff4444; margin-right: 5px; }
+        .online { background: #00ff88; box-shadow: 0 0 10px #00ff88; }
+        #status-text { font-size: 0.7rem; color: #666; }
+    </style>
+</head>
+<body>
+
+    <div class="monitor">
+        <div id="status-box"><span id="dot" class="dot"></span> <span id="status-text">DESCONECTADO</span></div>
+        
+        <div class="circle-container">
+            <div id="valor-num">--</div>
+        </div>
+        
+        <div class="label">Centímetros</div>
+        <div class="label" style="color: #222; margin-top: 20px;">Sensor Ultrasonido</div>
+    </div>
+
+    <script>
+        const TOKEN = "c92cc50b-8e1c-415b-b686-6a55d59e906f";
+
+        async function pullData() {
+            try {
+                const response = await fetch(`https://api.tago.io/data?variable=distancia&qty=1`, {
+                    headers: { 'Device-Token': TOKEN }
+                });
+                const data = await response.json();
+
+                if (data.status && data.result.length > 0) {
+                    const val = parseFloat(data.result[0].value);
+                    const display = document.getElementById('valor-num');
+                    const dot = document.getElementById('dot');
+                    const txt = document.getElementById('status-text');
+
+                    display.innerText = val.toFixed(0);
+                    display.style.color = val < 15 ? "#ff4757" : "#00d1ff";
+                    
+                    dot.className = "dot online";
+                    txt.innerText = "SISTEMA ACTIVO";
+                }
+            } catch (e) {
+                console.error("Error:", e);
+            }
+        }
+
+        setInterval(pullData, 1000);
+    </script>
+</body>
+</html>
