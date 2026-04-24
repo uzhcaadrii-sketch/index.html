@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Indicador de Nivel Chato</title>
+    <style>
+        body { background: #121212; color: white; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .panel { background: #1e1e1e; padding: 40px; border-radius: 30px; text-align: center; border: 1px solid #333; width: 300px; }
+        
+        /* Contenedor de la barra */
+        .barra-fondo { background: #333; height: 30px; border-radius: 15px; width: 100%; margin: 20px 0; overflow: hidden; border: 2px solid #222; }
+        
+        /* La barra que se mueve */
+        #barra-nivel { height: 100%; width: 0%; background: #2ed573; transition: width 0.5s ease, background 0.5s ease; }
+        
+        .valor { font-size: 4rem; font-weight: 900; margin: 0; }
+        .unidad { font-size: 1rem; color: #666; text-transform: uppercase; margin-bottom: 10px; }
+        #status { font-size: 0.7rem; color: #444; letter-spacing: 1px; margin-top: 15px; }
+    </style>
+</head>
+<body>
+
+    <div class="panel">
+        <div class="unidad">Distancia Sensor</div>
+        <div id="dist" class="valor">0</div>
+        <div class="unidad">CM</div>
+
+        <div class="barra-fondo">
+            <div id="barra-nivel"></div>
+        </div>
+
+        <div id="status">CONECTANDO...</div>
+    </div>
+
+    <script>
+        const TOKEN = "c92cc50b-8e1c-415b-b686-6a55d59e906f";
+
+        async function obtenerDatos() {
+            try {
+                const resp = await fetch(`https://api.tago.io/data?variable=distancia&qty=1`, {
+                    headers: { 'Device-Token': TOKEN }
+                });
+                const data = await resp.json();
+
+                if (data.status && data.result.length > 0) {
+                    const val = parseFloat(data.result[0].value);
+                    
+                    // Actualizar texto
+                    document.getElementById('dist').innerText = val.toFixed(0);
+                    document.getElementById('status').innerText = "SISTEMA ONLINE";
+                    document.getElementById('status').style.color = "#2ed573";
+
+                    // Actualizar barra (Asumiendo máximo 100cm para el 100%)
+                    let porcentaje = (val / 100) * 100;
+                    if (porcentaje > 100) porcentaje = 100;
+                    
+                    const barra = document.getElementById('barra-nivel');
+                    barra.style.width = porcentaje + "%";
+
+                    // Cambiar color de la barra según nivel
+                    if (val < 10) barra.style.background = "#ff4757"; // Rojo
+                    else if (val <= 30) barra.style.background = "#eabf00"; // Amarillo
+                    else barra.style.background = "#2ed573"; // Verde
+                }
+            } catch (e) {
+                document.getElementById('status').innerText = "ERROR DE CONEXIÓN";
+            }
+        }
+
+        setInterval(obtenerDatos, 1000);
+    </script>
+</body>
+</html>
