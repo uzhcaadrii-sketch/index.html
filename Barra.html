@@ -2,73 +2,70 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Indicador de Nivel Chato</title>
+    <title>Nivel de Distancia</title>
     <style>
-        body { background: #121212; color: white; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .panel { background: #1e1e1e; padding: 40px; border-radius: 30px; text-align: center; border: 1px solid #333; width: 300px; }
+        body { background: #121212; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: #1e1e1e; padding: 40px; border-radius: 25px; border: 1px solid #333; text-align: center; width: 320px; }
         
-        /* Contenedor de la barra */
-        .barra-fondo { background: #333; height: 30px; border-radius: 15px; width: 100%; margin: 20px 0; overflow: hidden; border: 2px solid #222; }
+        /* Barra de nivel chata */
+        .contenedor-barra { background: #333; height: 40px; border-radius: 10px; width: 100%; margin: 25px 0; overflow: hidden; position: relative; }
+        #barra { height: 100%; width: 0%; background: #2ed573; transition: width 0.5s ease, background 0.5s ease; }
         
-        /* La barra que se mueve */
-        #barra-nivel { height: 100%; width: 0%; background: #2ed573; transition: width 0.5s ease, background 0.5s ease; }
-        
-        .valor { font-size: 4rem; font-weight: 900; margin: 0; }
-        .unidad { font-size: 1rem; color: #666; text-transform: uppercase; margin-bottom: 10px; }
-        #status { font-size: 0.7rem; color: #444; letter-spacing: 1px; margin-top: 15px; }
+        .valor { font-size: 4.5rem; font-weight: 900; margin: 0; }
+        .label { color: #666; text-transform: uppercase; letter-spacing: 2px; font-size: 0.9rem; }
+        #status { font-size: 0.7rem; margin-top: 15px; color: #444; }
     </style>
 </head>
 <body>
 
-    <div class="panel">
-        <div class="unidad">Distancia Sensor</div>
+    <div class="card">
+        <div class="label">Distancia</div>
         <div id="dist" class="valor">0</div>
-        <div class="unidad">CM</div>
+        <div class="label">Centímetros</div>
 
-        <div class="barra-fondo">
-            <div id="barra-nivel"></div>
+        <div class="contenedor-barra">
+            <div id="barra"></div>
         </div>
 
-        <div id="status">CONECTANDO...</div>
+        <div id="status">CONECTANDO A TAGOIO...</div>
     </div>
 
     <script>
+        // TU NUEVO TOKEN
         const TOKEN = "c92cc50b-8e1c-415b-b686-6a55d59e906f";
 
-        async function obtenerDatos() {
+        async function update() {
             try {
-                const resp = await fetch(`https://api.tago.io/data?variable=distancia&qty=1`, {
+                const r = await fetch(`https://api.tago.io/data?variable=distancia&qty=1`, {
                     headers: { 'Device-Token': TOKEN }
                 });
-                const data = await resp.json();
+                const d = await r.json();
 
-                if (data.status && data.result.length > 0) {
-                    const val = parseFloat(data.result[0].value);
-                    
-                    // Actualizar texto
-                    document.getElementById('dist').innerText = val.toFixed(0);
+                if (d.status && d.result.length > 0) {
+                    const v = parseFloat(d.result[0].value);
+                    document.getElementById('dist').innerText = v.toFixed(0);
                     document.getElementById('status').innerText = "SISTEMA ONLINE";
                     document.getElementById('status').style.color = "#2ed573";
 
-                    // Actualizar barra (Asumiendo máximo 100cm para el 100%)
-                    let porcentaje = (val / 100) * 100;
-                    if (porcentaje > 100) porcentaje = 100;
-                    
-                    const barra = document.getElementById('barra-nivel');
-                    barra.style.width = porcentaje + "%";
+                    // Calculamos porcentaje (máximo 100cm)
+                    let p = (v / 100) * 100;
+                    if (p > 100) p = 100;
+                    if (p < 0) p = 0;
 
-                    // Cambiar color de la barra según nivel
-                    if (val < 10) barra.style.background = "#ff4757"; // Rojo
-                    else if (val <= 30) barra.style.background = "#eabf00"; // Amarillo
-                    else barra.style.background = "#2ed573"; // Verde
+                    const b = document.getElementById('barra');
+                    b.style.width = p + "%";
+
+                    // Colores según distancia
+                    if (v < 10) b.style.background = "#ff4757"; // Rojo
+                    else if (v <= 30) b.style.background = "#eabf00"; // Amarillo
+                    else b.style.background = "#2ed573"; // Verde
                 }
             } catch (e) {
                 document.getElementById('status').innerText = "ERROR DE CONEXIÓN";
             }
         }
 
-        setInterval(obtenerDatos, 1000);
+        setInterval(update, 1000);
     </script>
 </body>
 </html>
