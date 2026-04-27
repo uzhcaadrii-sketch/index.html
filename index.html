@@ -1,155 +1,179 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Sensor Dashboard</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Car Sensor</title>
 
-    <style>
-        body {
-            background: #050505;
-            color: #fff;
-            font-family: 'Segoe UI', sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
-        .monitor {
-            background: #111;
-            padding: 50px;
-            border-radius: 40px;
-            border: 1px solid #222;
-            text-align: center;
-            width: 300px;
-            position: relative;
-        }
+body {
+    overflow: hidden;
+    font-family: 'Segoe UI', sans-serif;
+}
 
-        /* 🚗 Carretera */
-        .road {
-            width: 100%;
-            height: 80px;
-            background: #222;
-            border-radius: 40px;
-            position: relative;
-            overflow: hidden;
-            margin: 20px auto;
-        }
+/* 🌤️ CIELO */
+.sky {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(#4facfe, #00c6ff);
+}
 
-        /* 🚗 Carro */
-        #car {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 2rem;
-            left: 0%;
-            transition: left 0.5s ease;
-        }
+/* ☁️ NUBES */
+.cloud {
+    position: absolute;
+    background: #fff;
+    border-radius: 50px;
+    opacity: 0.8;
+    animation: moveClouds linear infinite;
+}
 
-        /* Número */
-        #valor-num {
-            font-size: 4rem;
-            font-weight: 900;
-            color: #00d1ff;
-        }
+.cloud::before,
+.cloud::after {
+    content: "";
+    position: absolute;
+    background: #fff;
+    border-radius: 50%;
+}
 
-        .label {
-            color: #444;
-            text-transform: uppercase;
-            letter-spacing: 4px;
-            font-size: 0.7rem;
-            margin-top: 10px;
-        }
+.cloud1 { width: 120px; height: 60px; top: 10%; left: -150px; animation-duration: 40s; }
+.cloud2 { width: 180px; height: 80px; top: 25%; left: -200px; animation-duration: 60s; }
+.cloud3 { width: 100px; height: 50px; top: 40%; left: -120px; animation-duration: 50s; }
 
-        /* Estado */
-        .dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            display: inline-block;
-            background: #ff4444;
-            margin-right: 5px;
-        }
+@keyframes moveClouds {
+    from { transform: translateX(0); }
+    to { transform: translateX(120vw); }
+}
 
-        .online {
-            background: #00ff88;
-            box-shadow: 0 0 10px #00ff88;
-        }
+/* 🛣️ CARRETERA */
+.road {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 35%;
+    background: #2b2b2b;
+}
 
-        #status-text {
-            font-size: 0.7rem;
-            color: #666;
-        }
-    </style>
+/* Líneas de carretera */
+.lines {
+    position: absolute;
+    width: 200%;
+    height: 5px;
+    background: repeating-linear-gradient(
+        to right,
+        white 0 40px,
+        transparent 40px 80px
+    );
+    top: 50%;
+    animation: moveLines 1s linear infinite;
+}
+
+@keyframes moveLines {
+    from { transform: translateX(0); }
+    to { transform: translateX(-80px); }
+}
+
+/* 🚗 CARRO */
+#car {
+    position: absolute;
+    bottom: 10%;
+    left: 0%;
+    font-size: 4rem;
+    transition: left 0.5s ease, transform 0.2s;
+}
+
+/* HUD (info) */
+.hud {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    color: white;
+}
+
+#valor-num {
+    font-size: 4rem;
+    font-weight: 900;
+}
+
+.status {
+    font-size: 0.8rem;
+    opacity: 0.7;
+}
+
+.online { color: #00ff88; }
+.offline { color: #ff4444; }
+
+</style>
 </head>
 
 <body>
 
-    <div class="monitor">
+<div class="sky">
+    <div class="cloud cloud1"></div>
+    <div class="cloud cloud2"></div>
+    <div class="cloud cloud3"></div>
+</div>
 
-        <div id="status-box">
-            <span id="dot" class="dot"></span>
-            <span id="status-text">DESCONECTADO</span>
-        </div>
+<div class="road">
+    <div class="lines"></div>
+</div>
 
-        <!-- 🚗 Carretera -->
-        <div class="road">
-            <div id="car">🚗</div>
-        </div>
+<div id="car">🚗</div>
 
-        <!-- Número -->
-        <div id="valor-num">--</div>
+<div class="hud">
+    <div id="valor-num">--</div>
+    <div id="status-text" class="status offline">DESCONECTADO</div>
+</div>
 
-        <div class="label">Centímetros</div>
-        <div class="label" style="color: #222; margin-top: 20px;">
-            Sensor Ultrasonido
-        </div>
+<script>
+const TOKEN = "c92cc50b-8e1c-415b-b686-6a55d59e906f";
 
-    </div>
+async function pullData() {
+    try {
+        const response = await fetch(`https://api.tago.io/data?variable=distancia&qty=1`, {
+            headers: { 'Device-Token': TOKEN }
+        });
 
-    <script>
-        const TOKEN = "c92cc50b-8e1c-415b-b686-6a55d59e906f";
+        const data = await response.json();
 
-        async function pullData() {
-            try {
-                const response = await fetch(`https://api.tago.io/data?variable=distancia&qty=1`, {
-                    headers: { 'Device-Token': TOKEN }
-                });
+        if (data.status && data.result.length > 0) {
+            const val = parseFloat(data.result[0].value);
 
-                const data = await response.json();
+            const display = document.getElementById('valor-num');
+            const status = document.getElementById('status-text');
+            const car = document.getElementById('car');
 
-                if (data.status && data.result.length > 0) {
-                    const val = parseFloat(data.result[0].value);
+            display.innerText = val.toFixed(0) + " cm";
 
-                    const display = document.getElementById('valor-num');
-                    const dot = document.getElementById('dot');
-                    const txt = document.getElementById('status-text');
-                    const car = document.getElementById('car');
+            // Estado
+            status.innerText = "SISTEMA ACTIVO";
+            status.className = "status online";
 
-                    // Mostrar número
-                    display.innerText = val.toFixed(0);
+            // Movimiento del carro (0–200 cm ajustable)
+            let percent = (val / 200) * 100;
+            percent = Math.max(0, Math.min(100, percent));
 
-                    // Color según distancia
-                    display.style.color = val < 15 ? "#ff4757" : "#00d1ff";
+            car.style.left = percent + "%";
 
-                    // Estado online
-                    dot.className = "dot online";
-                    txt.innerText = "SISTEMA ACTIVO";
-
-                    // 🚗 Movimiento del carro
-                    let percent = Math.min(Math.max(val, 0), 100); // limitar 0-100
-                    car.style.left = percent + "%";
-                }
-
-            } catch (e) {
-                console.error("Error:", e);
+            // efecto cercanía 🚨
+            if (val < 15) {
+                car.style.transform = "scale(1.2)";
+                display.style.color = "#ff4444";
+            } else {
+                car.style.transform = "scale(1)";
+                display.style.color = "#ffffff";
             }
         }
 
-        setInterval(pullData, 1000);
-    </script>
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+setInterval(pullData, 1000);
+</script>
 
 </body>
 </html>
